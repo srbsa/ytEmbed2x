@@ -92,27 +92,41 @@
         }
     });
     
-    // Start observing
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['src', 'data-src']
-    });
+    // Start observing (wait for body to be available)
+    function startObserver() {
+        if (document.body) {
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['src', 'data-src']
+            });
+        } else {
+            // If body is not ready, wait and try again
+            setTimeout(startObserver, 100);
+        }
+    }
+    
+    startObserver();
     
     // Handle videos that are already on the page
     function initializeExistingVideos() {
-        if (isEnabled) {
+        if (isEnabled && document.body) {
             setSpeedForAllVideos();
         }
     }
     
     // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeExistingVideos);
-    } else {
-        initializeExistingVideos();
+    function initialize() {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeExistingVideos);
+        } else {
+            initializeExistingVideos();
+        }
     }
+    
+    // Start initialization
+    initialize();
     
     // Also check periodically for YouTube's dynamic loading
     setInterval(() => {
@@ -122,15 +136,35 @@
     }, 2000);
     
     // Handle YouTube's single-page app navigation
-    let lastUrl = location.href;
-    new MutationObserver(() => {
-        const url = location.href;
-        if (url !== lastUrl) {
-            lastUrl = url;
-            // YouTube navigation detected, re-initialize after a short delay
-            setTimeout(initializeExistingVideos, 1000);
-        }
-    }).observe(document, { subtree: true, childList: true });
+    function setupNavigationHandler() {
+        if (!document.body) return;
+        
+        let lastUrl = location.href;
+        const navigationObserver = new MutationObserver(() => {
+            const url = location.href;
+            if (url !== lastUrl) {
+                lastUrl = url;
+                // YouTube navigation detected, re-initialize after a short delay
+                setTimeout(() => {
+                    if (isEnabled) {
+                        initializeExistingVideos();
+                    }
+                }, 1000);
+            }
+        });
+        
+        navigationObserver.observe(document.body, { 
+            subtree: true, 
+            childList: true 
+        });
+    }
+    
+    // Setup navigation handler when body is ready
+    if (document.body) {
+        setupNavigationHandler();
+    } else {
+        document.addEventListener('DOMContentLoaded', setupNavigationHandler);
+    }
     
     // Handle video events
     document.addEventListener('loadstart', function(e) {
