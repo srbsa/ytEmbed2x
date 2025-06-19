@@ -66,29 +66,39 @@
     const observer = new MutationObserver(function(mutations) {
         if (!isEnabled) return;
         
-        let shouldCheck = false;
-        
-        mutations.forEach(function(mutation) {
-            mutation.addedNodes.forEach(function(node) {
-                if (node.nodeType === Node.ELEMENT_NODE) {
-                    // Check if the added node is a video or contains videos
-                    if (node.tagName === 'VIDEO') {
-                        setVideoSpeed(node);
-                        shouldCheck = true;
-                    } else if (node.querySelectorAll) {
-                        const videos = node.querySelectorAll('video');
-                        if (videos.length > 0) {
-                            videos.forEach(setVideoSpeed);
-                            shouldCheck = true;
+        try {
+            mutations.forEach(function(mutation) {
+                // Handle added nodes
+                if (mutation.addedNodes && mutation.addedNodes.length > 0) {
+                    mutation.addedNodes.forEach(function(node) {
+                        if (node && node.nodeType === Node.ELEMENT_NODE) {
+                            // Check if the added node is a video or contains videos
+                            if (node.tagName === 'VIDEO') {
+                                setVideoSpeed(node);
+                            } else if (node.querySelectorAll) {
+                                try {
+                                    const videos = node.querySelectorAll('video');
+                                    if (videos.length > 0) {
+                                        videos.forEach(setVideoSpeed);
+                                    }
+                                } catch (e) {
+                                    // Silently handle querySelectorAll errors
+                                }
+                            }
                         }
-                    }
+                    });
+                }
+                
+                // Handle attribute changes that might indicate video loading
+                if (mutation.type === 'attributes' && 
+                    mutation.target && 
+                    mutation.target.nodeType === Node.ELEMENT_NODE && 
+                    mutation.target.tagName === 'VIDEO') {
+                    setVideoSpeed(mutation.target);
                 }
             });
-        });
-        
-        // Also check for attribute changes that might indicate video loading
-        if (mutation.type === 'attributes' && mutation.target.tagName === 'VIDEO') {
-            setVideoSpeed(mutation.target);
+        } catch (error) {
+            console.error('YouTube 2x Speed: Error in mutation observer:', error);
         }
     });
     
