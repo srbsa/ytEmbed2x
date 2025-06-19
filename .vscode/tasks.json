@@ -1,0 +1,16 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Load Extension in Chrome",
+			"type": "shell",
+			"command": "echo",
+			"args": [
+				"To load the extension:\n1. Open Chrome and go to chrome://extensions/\n2. Enable 'Developer mode' (top right toggle)\n3. Click 'Load unpacked' button\n4. Select this folder: ${workspaceFolder}\n5. The extension will appear in your extensions list\n6. Pin it to toolbar for easy access\n\nThe extension is now ready to test on YouTube!"
+			],
+			"group": "build",
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}
